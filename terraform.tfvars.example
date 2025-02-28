@@ -1,0 +1,96 @@
+#######################
+# VARIABLES
+#######################
+
+# Credentials
+vsphere_server   = "vc.example.com"
+vsphere_user     = "vsphere.local\\administrator"
+vsphere_password = "password"
+
+# Environment
+datacenter      = "Datacenter"
+cluster         = "Cluster"
+datastore       = "Datastore"
+pool            = "K8s"
+network         = "PortGroup-k8s"
+content_library = "library"
+template        = "ubuntu-24.04-server-cloudimg-amd64"
+
+# VM Settings
+vm_specs = {
+        "cp_1" = {
+            name = "k8s-cp-1",
+            cpus = 2,
+            memory = 4096,
+            firmware = "efi",
+            disk = 80,
+            address = "192.168.0.3/24",
+            gateway = "192.168.0.1",
+            nameserver = "192.168.0.2",
+            ssh_public_key = "ssh-key",
+            login = "k8s_admin",
+            password = "generate with mkpasswd --method=SHA-512 --rounds=4096",
+            fqdn = "k8s-cp-1.example.com",
+            timezone = "Asia/Vladivostok"
+        },
+        "cp_2" = {
+            name = "k8s-cp-2",
+            cpus = 2,
+            memory = 4096,
+            firmware = "efi",
+            disk = 80,
+            address = "192.168.0.4/24",
+            gateway = "192.168.0.1",
+            nameserver = "192.168.0.2",
+            ssh_public_key = "ssh-key",
+            login = "k8s_admin",
+            password = "generate with mkpasswd --method=SHA-512 --rounds=4096",
+            fqdn = "k8s-cp-2.example.com",
+            timezone = "Asia/Vladivostok"
+        },
+        "cp_3" = {
+            name = "k8s-cp-3",
+            cpus = 2,
+            memory = 4096,
+            firmware = "efi",
+            disk = 80,
+            address = "192.168.0.5/24",
+            gateway = "192.168.0.1",
+            nameserver = "192.168.0.2",
+            ssh_public_key = "ssh-key",
+            login = "k8s_admin",
+            password = "generate with mkpasswd --method=SHA-512 --rounds=4096",
+            fqdn = "k8s-cp-3.example.com",
+            timezone = "Asia/Vladivostok"
+        },
+        "worker_1" = {
+            name = "k8s-worker-1",
+            cpus = 4,
+            memory = 16384,
+            firmware = "efi",
+            disk = 600,
+            address = "192.168.0.6/24",
+            gateway = "192.168.0.1",
+            nameserver = "192.168.0.2",
+            ssh_public_key = "ssh-key",
+            login = "k8s_admin",
+            password = "generate with mkpasswd --method=SHA-512 --rounds=4096",
+            fqdn = "k8s-worker-1.example.com",
+            timezone = "Asia/Vladivostok",
+        },
+        "worker_2" = {
+            name = "k8s-worker-1",
+            cpus = 6,
+            memory = 32768,
+            firmware = "efi",
+            disk = 600,
+            address = "192.168.0.7/24",
+            gateway = "192.168.0.1",
+            nameserver = "192.168.0.2",
+            ssh_public_key = "ssh-key",
+            login = "k8s_admin",
+            password = "generate with mkpasswd --method=SHA-512 --rounds=4096",
+            fqdn = "k8s-worker-2.example.com",
+            timezone = "Asia/Vladivostok",
+        }
+}
