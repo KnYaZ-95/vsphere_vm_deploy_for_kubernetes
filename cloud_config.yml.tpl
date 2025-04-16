@@ -19,6 +19,111 @@ users:
     ssh_authorized_keys:
      - ${authorized_key}
 
+%{ if type == "cp" ~}
+write_files:
+  - path: /etc/haproxy/haproxy.cfg
+    content: |
+      #---------------------------------------------------------------------
+      # Global settings
+      #---------------------------------------------------------------------
+      global
+          log /dev/log local0 info alert
+          log /dev/log local1 notice alert
+          daemon
+
+      #---------------------------------------------------------------------
+      # common defaults that all the 'listen' and 'backend' sections will
+      # use if not designated in their block
+      #---------------------------------------------------------------------
+      defaults
+          mode                    http
+          log                     global
+          option                  httplog
+          option                  dontlognull
+          option http-server-close
+          option forwardfor       except 127.0.0.0/8
+          option                  redispatch
+          retries                 1
+          timeout http-request    10s
+          timeout queue           20s
+          timeout connect         5s
+          timeout client          20s
+          timeout server          20s
+          timeout http-keep-alive 10s
+          timeout check           10s
+
+      #---------------------------------------------------------------------
+      # apiserver frontend which proxys to the control plane nodes
+      #---------------------------------------------------------------------
+      frontend apiserver
+          bind *:8888
+          mode tcp
+          option tcplog
+          default_backend apiserver
+
+      #---------------------------------------------------------------------
+      # round robin balancing for apiserver
+      #---------------------------------------------------------------------
+      backend apiserver
+          option httpchk GET /healthz
+          http-check expect status 200
+          mode tcp
+          option ssl-hello-chk
+          balance     roundrobin
+      %{~ for index, ip in cp_ips ~}
+              server node${index + 1} ${ip}:6443 check
+      %{~ endfor ~}
+    permissions: '0644'
+    owner: root:root
+  - path: /etc/keepalived/keepalived.conf
+    content: |
+      global_defs {
+          enable_script_security
+          script_user nobody
+      }
+
+      vrrp_script check_apiserver {
+        script "/etc/keepalived/check_apiserver.sh"
+        interval 3
+      }
+
+      vrrp_instance VI_1 {
+          state BACKUP
+          interface ens192
+          virtual_router_id 5
+          priority 100
+          advert_int 1
+          nopreempt
+          authentication {
+              auth_type PASS
+              auth_pass ZqSj#f1G
+          }
+          virtual_ipaddress {
+              ${vip}
+          }
+          track_script {
+              check_apiserver
+          }
+      }
+    permissions: '0644'
+    owner: root:root
+  - path: /etc/keepalived/check_apiserver.sh
+    content: |
+      #!/bin/sh
+
+      errorExit() {
+          echo "*** $*" 1>&2
+          exit 1
+      }
+
+      curl --silent --max-time 2 --insecure http://localhost:8888/ -o /dev/null || errorExit "Error GET http://localhost:8888/"
+      if ip addr | grep -q ${vip}; then
+          curl --silent --max-time 2 --insecure http://${vip}:8888/ -o /dev/null || errorExit "Error GET http:/${vip}:8888/"
+      fi
+    permissions: '0755'
+    owner: root:root
+%{ endif ~}
+
 package_update: true
 package_upgrade: true
 packages:
@@ -29,6 +134,11 @@ packages:
   - apt-transport-https
   - ca-certificates
   - containerd
+%{ if type == "cp" ~}
+  - haproxy
+  - keepalived
+  - jq
+%{ endif ~}
 
 timezone: ${timezone}
 hostname: ${hostname}
@@ -47,11 +157,17 @@ runcmd:
 - sysctl -f /etc/sysctl.d/10-k8s.conf
 # kubeadm, kubelet, kubectl, helm installation
 - curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+%{ if type == "cp" ~}
 - curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | tee /usr/share/keyrings/helm.gpg > /dev/null
-- echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
 - echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list
+%{ endif ~}
+- echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
 - apt-get update
+%{ if type == "cp" ~}
 - apt-get install -y kubelet kubeadm kubectl helm
+%{ else ~}
+- apt-get install -y kubelet kubeadm kubectl
+%{ endif ~}
 - apt-mark hold kubelet kubeadm kubectl
 - systemctl enable kubelet
 # containerd
@@ -61,10 +177,3 @@ runcmd:
 - systemctl restart containerd
 - systemctl enable containerd
 - shutdown -r now
-
-write_files:
-  - path: /home/${user}/readme
-    content: |
-      This is property of DevOps engineer
-    owner: ${user}:${user}
-    permissions: '0644'

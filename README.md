@@ -21,57 +21,25 @@ All you need is:
 git clone https://github.com/KnYaZ-95/vsphere_vm_deploy_for_kubernetes.git && cd vsphere_vm_deploy_for_kubernetes
 ```
 3. Create your own file `terraform.tfvars`. Refer to [terraform.tfvars.example](./terraform.tfvars.example) file
-4. Note that a pool is created in the [vm.tf](./vm.tf) file. You can use your own pool by commenting out the lines with the creation
-```HCL
-# this resource
-
-resource "vsphere_resource_pool" "pool" {
-  name                    = var.pool
-  parent_resource_pool_id = data.vsphere_compute_cluster.cluster.resource_pool_id
-
-  cpu_share_level    = "normal"
-  cpu_reservation    = 60
-  cpu_limit          = -1
-  cpu_expandable     = true
-  cpu_shares         = 4000
-
-  memory_share_level = "normal"
-  memory_reservation = 102400
-  memory_limit       = -1
-  memory_expandable  = true
-  memory_shares      = 163840
-}
-```
-```HCL
-# this string in resource "vsphere_virtual_machine" "vm"
-
-resource_pool_id     = vsphere_resource_pool.pool.id
-```   
-and uncommenting the lines with the use of the existing pool
-```HCL
-# this data resource
-
-data "vsphere_resource_pool" "pool" {
-  name          = var.pool
-  datacenter_id = data.vsphere_datacenter.datacenter.id
-}
-``` 
-```HCL
-# this string in resource "vsphere_virtual_machine" "vm"
-
-resource_pool_id     = data.vsphere_resource_pool.pool.id
-```
-5. Make sure the сd-rom in the [vm.tf](./vm.tf) is commented out
+4. Check [cloud.config.yml.tpl](./cloud.config.yml.tpl). It designed for keepalived and haproxy installation
+4. Make sure the сd-rom in the [vm.tf](./vm.tf) is commented out
 ```HCL
 # cdrom {
 #   client_device = true
 # }
 ``` 
-6. Apply
+6. Apply the manifests
 ```bash
 terraform apply -auto-approve  
 ```
-7. Initialize cluster with three control plane nodes using `kubeadm`. Make sure you created a common endpoint for all nodes (for example you can use `keepalived` and `haproxy`)
+7. Initialize cluster using `kubeadm`. Check virtual ip that you asigned
+```bash
+kubeadm init \
+               --pod-network-cidr=10.244.0.0/16 \
+               --control-plane-endpoint "<your-vip>:8888" \
+               --upload-certs  
+```
+8. Join control plane and worker nodes
 
 ## 💥 How to destroy:
 1. Make sure the сd-rom in the [vm.tf](./vm.tf) is uncommented

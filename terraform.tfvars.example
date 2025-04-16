@@ -8,17 +8,34 @@ vsphere_user     = "vsphere.local\\administrator"
 vsphere_password = "password"
 
 # Environment
-datacenter      = "Datacenter"
-cluster         = "Cluster"
-datastore       = "Datastore"
-pool            = "K8s"
-network         = "PortGroup-k8s"
-content_library = "library"
+environment_mapping = {
+    "Datacenter_1" = {
+        cluster_name = {main = "Cluster_1"}
+        datastore_name = {main = "LUN_1"}
+        pool = {main = "SRV-K8s"}
+        network = {main = "PortGroup-0"}
+
+    },
+    "Datacenter_2" = {
+        cluster_name = {main = "Cluster_2", secondary = "Cluster_3"}
+        datastore_name = {main = "LUN_1", secondary = "LUN_2"}
+        pool = {main = "SRV-K8s", secondary = "Dev-K8s"}
+        network = {main = "PortGroup-1", secondary = "PortGroup-2"}
+    }
+}
+
+content_library = "library_LUN_1"
 template        = "ubuntu-24.04-server-cloudimg-amd64"
 
 # VM Settings
 vm_specs = {
         "cp_1" = {
+            type = "cp"
+            datacenter = "Datacenter_1",
+            cluster = "Cluster_1",
+            datastore = "LUN_1",
+            pool = "SRV-K8s",
+            network = "PortGroup-0",
             name = "k8s-cp-1",
             cpus = 2,
             memory = 4096,
@@ -34,6 +51,12 @@ vm_specs = {
             timezone = "Asia/Vladivostok"
         },
         "cp_2" = {
+            type = "cp"
+            datacenter = "Datacenter_1",
+            cluster = "Cluster_1",
+            datastore = "LUN_1",
+            pool = "SRV-K8s",
+            network = "PortGroup-0",
             name = "k8s-cp-2",
             cpus = 2,
             memory = 4096,
@@ -49,6 +72,12 @@ vm_specs = {
             timezone = "Asia/Vladivostok"
         },
         "cp_3" = {
+            type = "cp"
+            datacenter = "Datacenter_1",
+            cluster = "Cluster_1",
+            datastore = "LUN_1",
+            pool = "SRV-K8s",
+            network = "PortGroup-0",
             name = "k8s-cp-3",
             cpus = 2,
             memory = 4096,
@@ -64,14 +93,20 @@ vm_specs = {
             timezone = "Asia/Vladivostok"
         },
         "worker_1" = {
+            type = "worker"
+            datacenter = "Datacenter_2",
+            cluster = "Cluster_2",
+            datastore = "LUN_2",
+            pool = "SRV-K8s",
+            network = "PortGroup-1",
             name = "k8s-worker-1",
             cpus = 4,
             memory = 16384,
             firmware = "efi",
             disk = 600,
-            address = "192.168.0.6/24",
-            gateway = "192.168.0.1",
-            nameserver = "192.168.0.2",
+            address = "192.168.1.6/24",
+            gateway = "192.168.1.1",
+            nameserver = "192.168.1.2",
             ssh_public_key = "ssh-key",
             login = "k8s_admin",
             password = "generate with mkpasswd --method=SHA-512 --rounds=4096",
@@ -79,14 +114,20 @@ vm_specs = {
             timezone = "Asia/Vladivostok",
         },
         "worker_2" = {
+            type = "worker"
+            datacenter = "Datacenter_2",
+            cluster = "Cluster_3",
+            datastore = "LUN_2",
+            pool = "SRV-K8s",
+            network = "PortGroup-2",
             name = "k8s-worker-1",
             cpus = 6,
             memory = 32768,
             firmware = "efi",
             disk = 600,
-            address = "192.168.0.7/24",
-            gateway = "192.168.0.1",
-            nameserver = "192.168.0.2",
+            address = "192.168.2.7/24",
+            gateway = "192.168.2.1",
+            nameserver = "192.168.2.2",
             ssh_public_key = "ssh-key",
             login = "k8s_admin",
             password = "generate with mkpasswd --method=SHA-512 --rounds=4096",

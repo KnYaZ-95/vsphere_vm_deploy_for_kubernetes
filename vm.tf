@@ -1,26 +1,29 @@
-data "vsphere_datacenter" "datacenter" {
-  name = var.datacenter
+data "vsphere_datacenter" "datacenters" {
+  for_each = var.environment_mapping
+  name = each.key
 }
 
-data "vsphere_datastore" "datastore" {
-  name          = var.datastore
-  datacenter_id = data.vsphere_datacenter.datacenter.id
+
+data "vsphere_datastore" "datastores" {
+  for_each = {for datastore in local.datastores: datastore.datastore_name => datastore}
+  name          = each.value.datastore_name
+  datacenter_id = data.vsphere_datacenter.datacenters[each.value.datacenter_name].id
 }
 
-data "vsphere_compute_cluster" "cluster" {
-  name          = var.cluster
-  datacenter_id = data.vsphere_datacenter.datacenter.id
+
+data "vsphere_compute_cluster" "clusters" {
+  for_each = {for cluster in local.clusters: cluster.cluster_name => cluster}
+  name          = each.value.cluster_name
+  datacenter_id = data.vsphere_datacenter.datacenters[each.value.datacenter_name].id
 }
 
-# data "vsphere_resource_pool" "pool" {
-#   name          = var.pool
-#   datacenter_id = data.vsphere_datacenter.datacenter.id
-# }
 
-data "vsphere_network" "network" {
-  name           = var.network
-  datacenter_id  = data.vsphere_datacenter.datacenter.id
+data "vsphere_network" "networks" {
+  for_each = {for network in local.networks: network.network_name => network}
+  name           = each.value.network_name
+  datacenter_id  = data.vsphere_datacenter.datacenters[each.value.datacenter_name].id
 }
+
 
 data "vsphere_content_library" "content_library" {
   name = var.content_library
@@ -32,10 +35,11 @@ data "vsphere_content_library_item" "template" {
   library_id = data.vsphere_content_library.content_library.id
 }
 
-# if pool exists uncomment pool data source and comment this resource
-resource "vsphere_resource_pool" "pool" {
-  name                    = var.pool
-  parent_resource_pool_id = data.vsphere_compute_cluster.cluster.resource_pool_id
+
+resource "vsphere_resource_pool" "pools" {
+  for_each = {for pool in local.pools: "${pool.cluster}_${pool.pool}" => pool}
+  name                    = each.value.pool
+  parent_resource_pool_id = data.vsphere_compute_cluster.clusters[each.value.cluster].resource_pool_id
 
   cpu_share_level    = "normal"
   cpu_reservation    = 60
@@ -50,19 +54,19 @@ resource "vsphere_resource_pool" "pool" {
   memory_shares      = 163840
 }  
 
-resource "vsphere_virtual_machine" "vm" {
+
+resource "vsphere_virtual_machine" "vms" {
   for_each = var.vm_specs
 
   name                 = each.value.name
-  datastore_id         = data.vsphere_datastore.datastore.id
-  # resource_pool_id     = data.vsphere_resource_pool.pool.id
-  resource_pool_id     = vsphere_resource_pool.pool.id
+  datastore_id         = data.vsphere_datastore.datastores[each.value.datastore].id
+  resource_pool_id     = vsphere_resource_pool.pools["${each.value.cluster}_${each.value.pool}"].id
   num_cpus             = each.value.cpus
   memory               = each.value.memory
   firmware             = each.value.firmware
 
   network_interface {
-    network_id = data.vsphere_network.network.id
+    network_id = data.vsphere_network.networks[each.value.network].id
   }
 
   disk {
@@ -73,18 +77,16 @@ resource "vsphere_virtual_machine" "vm" {
   }
 
   # uncomment to destroy
-  # cdrom {
-  #   client_device = true
-  # }
+  cdrom {
+    client_device = true
+  }
 
   clone {
     template_uuid = data.vsphere_content_library_item.template.id
   }
 
   lifecycle {
-    ignore_changes = [
-      clone[0].template_uuid,
-    ]
+    ignore_changes = [clone[0].template_uuid]
   }
 
   extra_config = {
@@ -92,15 +94,27 @@ resource "vsphere_virtual_machine" "vm" {
                                                                                                         ip_address = each.value.address, 
                                                                                                         gateway = each.value.gateway, 
                                                                                                         nameserver = each.value.nameserver
-                                                                                                        }))
-    "guestinfo.metadata.encoding" = "base64"
-    "guestinfo.userdata"          = base64encode(templatefile("${path.module}/cloud_config.yml.tpl", {hostname = each.value.name, 
+                                                                                                        }
+                                                              )
+                                                )
+    "guestinfo.userdata"          = base64encode(templatefile("${path.module}/cloud_config.yml.tpl", {type = each.value.type,
+                                                                                                      cp_ips = var.cp_addresses,
+                                                                                                      vip = var.virtual_ip,
+                                                                                                      hostname = each.value.name, 
                                                                                                       user = each.value.login, 
                                                                                                       password = each.value.password, 
                                                                                                       authorized_key = each.value.ssh_public_key, 
                                                                                                       timezone = each.value.timezone, 
                                                                                                       fqdn = each.value.fqdn
-                                                                                                      }))
+                                                                                                      }
+                                                              )
+                                                )
     "guestinfo.userdata.encoding" = "base64"
+    "guestinfo.metadata.encoding" = "base64"
   }
+}
+
+
+output "CreatedVMs" {
+  value = "\n${join("\n", [for name, vm in vsphere_virtual_machine.vms :format("✓ Created %s i-10s with IP: %s", name, vm.default_ip_address)])}"
 }
