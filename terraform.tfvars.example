@@ -28,6 +28,8 @@ content_library = "library_LUN_1"
 template        = "ubuntu-24.04-server-cloudimg-amd64"
 
 # VM Settings
+cp_addresses = ["192.168.0.2", "192.168.0.3", "192.168.0.4"]
+virtual_ip = "192.168.0.20"
 vm_specs = {
         "cp_1" = {
             type = "cp"

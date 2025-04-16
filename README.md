@@ -20,7 +20,7 @@ All you need is:
 ```bash
 git clone https://github.com/KnYaZ-95/vsphere_vm_deploy_for_kubernetes.git && cd vsphere_vm_deploy_for_kubernetes
 ```
-3. Create your own file `terraform.tfvars`. Refer to [terraform.tfvars.example](./terraform.tfvars.example) file. The number of pools must be equal to the number of networks, otherwise the script will not work
+3. Create your own file `terraform.tfvars`. Refer to [terraform.tfvars.example](./terraform.tfvars.example) file. The number of pools must be equal to the number of networks, otherwise the script will not work. Also you have to set the IP addresses of the control nodes and determine which address will be common for them (this is necessary for keepalived and haproxy)
 4. Check [cloud.config.yml.tpl](./cloud.config.yml.tpl). It designed for keepalived and haproxy installation
 4. Make sure the сd-rom in the [vm.tf](./vm.tf) is commented out
 ```HCL
