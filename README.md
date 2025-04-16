@@ -20,7 +20,7 @@ All you need is:
 ```bash
 git clone https://github.com/KnYaZ-95/vsphere_vm_deploy_for_kubernetes.git && cd vsphere_vm_deploy_for_kubernetes
 ```
-3. Create your own file `terraform.tfvars`. Refer to [terraform.tfvars.example](./terraform.tfvars.example) file
+3. Create your own file `terraform.tfvars`. Refer to [terraform.tfvars.example](./terraform.tfvars.example) file. The number of pools must be equal to the number of networks, otherwise the script will not work
 4. Check [cloud.config.yml.tpl](./cloud.config.yml.tpl). It designed for keepalived and haproxy installation
 4. Make sure the сd-rom in the [vm.tf](./vm.tf) is commented out
 ```HCL
@@ -32,7 +32,7 @@ git clone https://github.com/KnYaZ-95/vsphere_vm_deploy_for_kubernetes.git && cd
 ```bash
 terraform apply -auto-approve  
 ```
-7. Initialize cluster using `kubeadm`. Check virtual ip that you asigned
+7. Initialize cluster using `kubeadm`. Check virtual ip that you assigned
 ```bash
 kubeadm init \
                --pod-network-cidr=10.244.0.0/16 \
