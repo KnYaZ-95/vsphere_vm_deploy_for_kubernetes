@@ -77,9 +77,9 @@ resource "vsphere_virtual_machine" "vms" {
   }
 
   # uncomment to destroy
-  cdrom {
-    client_device = true
-  }
+  # cdrom {
+  #   client_device = true
+  # }
 
   clone {
     template_uuid = data.vsphere_content_library_item.template.id
@@ -116,5 +116,12 @@ resource "vsphere_virtual_machine" "vms" {
 
 
 output "CreatedVMs" {
-  value = "\n${join("\n", [for name, vm in vsphere_virtual_machine.vms :format("✓ Created %s i-10s with IP: %s", name, vm.default_ip_address)])}"
+  value = <<-EOT
+    Virtual Machines Summary:
+    ${join("\n", [
+      for name, vm in vsphere_virtual_machine.vms : 
+      format("  ✓ %-15s | IP: %-15s", name, vm.default_ip_address)
+    ])}
+    Total created: ${length(vsphere_virtual_machine.vms)}
+  EOT
 }
