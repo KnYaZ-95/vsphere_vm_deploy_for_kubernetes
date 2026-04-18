@@ -2,138 +2,169 @@
 # VARIABLES
 #######################
 
-# Credentials
+# vCenter Credentials
 vsphere_server   = "vc.example.com"
 vsphere_user     = "vsphere.local\\administrator"
-vsphere_password = "password"
+vsphere_password = "P@ssw0rd"
+
+# vCenter Settings
+hardware_version     = 21
+allow_unverified_ssl = false
+vsphere_api_timeout  = 10
 
 # Environment
 environment_mapping = {
-    "Datacenter_1" = {
-        cluster_name = {main = "Cluster_1"}
-        datastore_name = {main = "LUN_1"}
-        pool = {main = "SRV-K8s"}
-        network = {main = "PortGroup-0"}
-
-    },
-    "Datacenter_2" = {
-        cluster_name = {main = "Cluster_2", secondary = "Cluster_3"}
-        datastore_name = {main = "LUN_1", secondary = "LUN_2"}
-        pool = {main = "SRV-K8s", secondary = "Dev-K8s"}
-        network = {main = "PortGroup-1", secondary = "PortGroup-2"}
-    }
+  "Datacenter_1" = {
+    cluster_name   = { main = "Cluster_1" }
+    datastore_name = { main = "LUN_1" }
+    pool           = { main = "SRV-K8s" }
+    network        = { main = "PortGroup-0" }
+  },
+  "Datacenter_2" = {
+    cluster_name   = { main = "Cluster_2", secondary = "Cluster_3" }
+    datastore_name = { main = "LUN_1", secondary = "LUN_2" }
+    pool           = { main = "SRV-K8s", secondary = "Dev-K8s" }
+    network        = { main = "PortGroup-1", secondary = "PortGroup-2" }
+  }
 }
 
 content_library = "library_LUN_1"
-template        = "ubuntu-24.04-server-cloudimg-amd64"
+template        = "ubuntu-24.04"
 
-# VM Settings
-cp_addresses = ["192.168.0.2", "192.168.0.3", "192.168.0.4"]
-virtual_ip = "192.168.0.20"
+# Kubernetes HA
+virtual_ip           = "192.168.0.20"
+keepalived_auth_pass = "vrrp-secret-pass"
+
+# Kubernetes Version
+k8s_version         = "1.35"
+pause_image_version = "3.10.1"
+
+# Proxy (optional, leave empty string if not needed)
+http_proxy = ""
+no_proxy   = "localhost,127.0.0.1,.svc,.svc.cluster.local,.cluster.local,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12"
+
+# VM Specs
 vm_specs = {
-        "cp_1" = {
-            type = "cp"
-            datacenter = "Datacenter_1",
-            cluster = "Cluster_1",
-            datastore = "LUN_1",
-            pool = "SRV-K8s",
-            network = "PortGroup-0",
-            name = "k8s-cp-1",
-            cpus = 2,
-            memory = 4096,
-            firmware = "efi",
-            disk = 80,
-            address = "192.168.0.3/24",
-            gateway = "192.168.0.1",
-            nameserver = "192.168.0.2",
-            ssh_public_key = "ssh-key",
-            login = "k8s_admin",
-            password = "generate with mkpasswd --method=SHA-512 --rounds=4096",
-            fqdn = "k8s-cp-1.example.com",
-            timezone = "Asia/Vladivostok"
-        },
-        "cp_2" = {
-            type = "cp"
-            datacenter = "Datacenter_1",
-            cluster = "Cluster_1",
-            datastore = "LUN_1",
-            pool = "SRV-K8s",
-            network = "PortGroup-0",
-            name = "k8s-cp-2",
-            cpus = 2,
-            memory = 4096,
-            firmware = "efi",
-            disk = 80,
-            address = "192.168.0.4/24",
-            gateway = "192.168.0.1",
-            nameserver = "192.168.0.2",
-            ssh_public_key = "ssh-key",
-            login = "k8s_admin",
-            password = "generate with mkpasswd --method=SHA-512 --rounds=4096",
-            fqdn = "k8s-cp-2.example.com",
-            timezone = "Asia/Vladivostok"
-        },
-        "cp_3" = {
-            type = "cp"
-            datacenter = "Datacenter_1",
-            cluster = "Cluster_1",
-            datastore = "LUN_1",
-            pool = "SRV-K8s",
-            network = "PortGroup-0",
-            name = "k8s-cp-3",
-            cpus = 2,
-            memory = 4096,
-            firmware = "efi",
-            disk = 80,
-            address = "192.168.0.5/24",
-            gateway = "192.168.0.1",
-            nameserver = "192.168.0.2",
-            ssh_public_key = "ssh-key",
-            login = "k8s_admin",
-            password = "generate with mkpasswd --method=SHA-512 --rounds=4096",
-            fqdn = "k8s-cp-3.example.com",
-            timezone = "Asia/Vladivostok"
-        },
-        "worker_1" = {
-            type = "worker"
-            datacenter = "Datacenter_2",
-            cluster = "Cluster_2",
-            datastore = "LUN_2",
-            pool = "SRV-K8s",
-            network = "PortGroup-1",
-            name = "k8s-worker-1",
-            cpus = 4,
-            memory = 16384,
-            firmware = "efi",
-            disk = 600,
-            address = "192.168.1.6/24",
-            gateway = "192.168.1.1",
-            nameserver = "192.168.1.2",
-            ssh_public_key = "ssh-key",
-            login = "k8s_admin",
-            password = "generate with mkpasswd --method=SHA-512 --rounds=4096",
-            fqdn = "k8s-worker-1.example.com",
-            timezone = "Asia/Vladivostok",
-        },
-        "worker_2" = {
-            type = "worker"
-            datacenter = "Datacenter_2",
-            cluster = "Cluster_3",
-            datastore = "LUN_2",
-            pool = "SRV-K8s",
-            network = "PortGroup-2",
-            name = "k8s-worker-1",
-            cpus = 6,
-            memory = 32768,
-            firmware = "efi",
-            disk = 600,
-            address = "192.168.2.7/24",
-            gateway = "192.168.2.1",
-            nameserver = "192.168.2.2",
-            ssh_public_key = "ssh-key",
-            login = "k8s_admin",
-            password = "generate with mkpasswd --method=SHA-512 --rounds=4096",
-            fqdn = "k8s-worker-2.example.com",
-            timezone = "Asia/Vladivostok",
-        }
+  "cp_1" = {
+    type              = "cp"
+    datacenter        = "Datacenter_1"
+    cluster           = "Cluster_1"
+    datastore         = "LUN_1"
+    pool              = "SRV-K8s"
+    network           = "PortGroup-0"
+    name              = "k8s-cp-1"
+    cpus              = 2
+    memory            = 4096
+    firmware          = "efi"
+    network_interface = "ens192"
+    address           = "192.168.0.3/24"
+    gateway           = "192.168.0.1"
+    nameserver        = "192.168.0.2"
+    ssh_public_key    = "ssh-ed25519 AAAA..."
+    login             = "k8s_admin"
+    password          = "$6$rounds=4096$..."
+    fqdn              = "k8s-cp-1.example.com"
+    timezone          = "Asia/Vladivostok"
+    disks = [
+      { size = 80, thin_provisioned = true, eagerly_scrub = false }
+    ]
+  }
+  "cp_2" = {
+    type              = "cp"
+    datacenter        = "Datacenter_1"
+    cluster           = "Cluster_1"
+    datastore         = "LUN_1"
+    pool              = "SRV-K8s"
+    network           = "PortGroup-0"
+    name              = "k8s-cp-2"
+    cpus              = 2
+    memory            = 4096
+    firmware          = "efi"
+    network_interface = "ens192"
+    address           = "192.168.0.4/24"
+    gateway           = "192.168.0.1"
+    nameserver        = "192.168.0.2"
+    ssh_public_key    = "ssh-ed25519 AAAA..."
+    login             = "k8s_admin"
+    password          = "$6$rounds=4096$..."
+    fqdn              = "k8s-cp-2.example.com"
+    timezone          = "Asia/Vladivostok"
+    disks = [
+      { size = 80, thin_provisioned = true, eagerly_scrub = false }
+    ]
+  }
+  "cp_3" = {
+    type              = "cp"
+    datacenter        = "Datacenter_1"
+    cluster           = "Cluster_1"
+    datastore         = "LUN_1"
+    pool              = "SRV-K8s"
+    network           = "PortGroup-0"
+    name              = "k8s-cp-3"
+    cpus              = 2
+    memory            = 4096
+    firmware          = "efi"
+    network_interface = "ens192"
+    address           = "192.168.0.5/24"
+    gateway           = "192.168.0.1"
+    nameserver        = "192.168.0.2"
+    ssh_public_key    = "ssh-ed25519 AAAA..."
+    login             = "k8s_admin"
+    password          = "$6$rounds=4096$..."
+    fqdn              = "k8s-cp-3.example.com"
+    timezone          = "Asia/Vladivostok"
+    disks = [
+      { size = 80, thin_provisioned = true, eagerly_scrub = false }
+    ]
+  }
+  "worker_1" = {
+    type              = "worker"
+    datacenter        = "Datacenter_2"
+    cluster           = "Cluster_2"
+    datastore         = "LUN_1"
+    pool              = "SRV-K8s"
+    network           = "PortGroup-1"
+    name              = "k8s-worker-1"
+    cpus              = 4
+    memory            = 16384
+    firmware          = "efi"
+    network_interface = "ens192"
+    address           = "192.168.1.6/24"
+    gateway           = "192.168.1.1"
+    nameserver        = "192.168.1.2"
+    ssh_public_key    = "ssh-ed25519 AAAA..."
+    login             = "k8s_admin"
+    password          = "$6$rounds=4096$..."
+    fqdn              = "k8s-worker-1.example.com"
+    timezone          = "Asia/Vladivostok"
+    disks = [
+      { size = 80, thin_provisioned = true, eagerly_scrub = false },
+      { size = 300, thin_provisioned = true, eagerly_scrub = false }
+    ]
+  }
+  "worker_2" = {
+    type              = "worker"
+    datacenter        = "Datacenter_2"
+    cluster           = "Cluster_3"
+    datastore         = "LUN_2"
+    pool              = "Dev-K8s"
+    network           = "PortGroup-2"
+    name              = "k8s-worker-2"
+    cpus              = 6
+    memory            = 32768
+    firmware          = "efi"
+    network_interface = "ens192"
+    address           = "192.168.2.7/24"
+    gateway           = "192.168.2.1"
+    nameserver        = "192.168.2.2"
+    ssh_public_key    = "ssh-ed25519 AAAA..."
+    login             = "k8s_admin"
+    password          = "$6$rounds=4096$..."
+    fqdn              = "k8s-worker-2.example.com"
+    timezone          = "Asia/Vladivostok"
+    disks = [
+      { size = 80, thin_provisioned = true, eagerly_scrub = false },
+      { size = 300, thin_provisioned = true, eagerly_scrub = false }
+    ]
+  }
 }
